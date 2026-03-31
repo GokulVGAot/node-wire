@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node-wire Playground</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="glow-bg"></div>
+    <div class="app-wrapper">
+        <header class="dashboard-header">
+            <div class="brand">
+                <a href="#" id="back-to-home" class="brand-link">
+                    <div class="logo-mark">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2L15 8H9L12 2Z" fill="currentColor"/>
+                            <circle cx="12" cy="14" r="4" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 18V22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </a>
+                <div class="brand-text">
+                    <h1>Node-<span class="accent">Wire</span></h1>
+                    <p class="tagline">Autonomous Connector Orchestration Platform</p>
+                </div>
+            </div>
+            <div class="header-actions hidden" id="header-actions">
+                <div class="business-value-stat">
+                    <span class="val" style="color: var(--brand-light);">100%</span>
+                    <span class="lab">Transparency</span>
+                </div>
+                <div class="system-status">
+                    <div class="pulse"></div>
+                    <span id="connector-status">Epic R4 Online</span>
+                </div>
+                <div class="retry-status">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="23 4 23 10 17 10"></polyline>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                    </svg>
+                    <span>Auto-retry Enabled</span>
+                </div>
+            </div>
+        </header>
+
+        <div id="root-selection-view" class="root-selection-view">            
+            <div class="selection-grid">
+                <div class="selection-card card-mcp" data-target="agent">
+                    <div class="card-inner">
+                        <div class="selection-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                        </div>
+                        <div class="selection-details">
+                            <h3>Agentic Workflow</h3>
+                            <p> via ToolHive</p>
+                        </div>
+                        <div class="action-bar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="selection-card card-connectors" data-target="connectors">
+                    <div class="card-inner">
+                        <div class="selection-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                        </div>
+                        <div class="selection-details">
+                            <h3>Connectors</h3>
+                            <p>Pre-built Clinical Workflows</p>
+                        </div>
+                        <div class="action-bar">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"></polyline><polyline points="6 17 11 12 6 7"></polyline></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <main class="layout-main agent-mode hidden">
+            <button class="back-link main-back-btn" id="back-selection-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                Back to Workspace
+            </button>
+            <div id="agent-panel" class="glass-card main-form-card agent-chat-card">
+                <div class="card-title">
+                    <div class="title-group">
+                        <h2>Node-Wire MCP via ToolHive</h2>
+                        <span class="info-tip">MCP Agent &mdash; Guardrailed</span>
+                    </div>
+                    <button id="new-chat-btn" class="chat-reset-btn" title="Start New Chat">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+                        New Chat
+                    </button>
+                </div>
+
+                <div class="chat-container" id="agent-chat-history">
+                    <div class="chat-bubble assistant">
+                        <div class="bubble-content">
+                            <span class="bubble-role">Agent</span>
+                            <p>Hello! I'm your AI healthcare assistant. I can help you:</p>
+                            <ul style="margin: 0.5rem 0 0 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                            <li>Fetch patient records from Cerner or Epic FHIR</li>
+                            <li>Upload clinical documents to Google Drive</li>
+                            <li>Send patient summaries via email</li>
+                            </ul>
+                            <p style="margin-top: 0.5rem;">What would you like to do?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="agent-typing" class="typing-indicator hidden">
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-dot"></span>
+                    <span class="typing-label">Agent is thinking...</span>
+                </div>
+
+                <div class="chat-input-row">
+                    <input type="text" id="agent-input" placeholder="Ask me about a patient, workflow, or task..." autocomplete="off">
+                    <button type="button" id="agent-send-btn" class="chat-send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="connectors-view" class="hidden">
+                <div id="connectors-list-panel">
+                    <div class="card-title">
+                        <h2>System Connectors</h2>
+                        <span class="info-tip">Pre-built Enterprise Integrations</span>
+                    </div>
+                    
+                    <div class="connector-grid">
+                        <div class="connector-card" data-mode="ehr">
+                            <div class="connector-icon bg-epic">
+                                <!-- Epic Systems real logo mark -->
+                                <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <rect width="80" height="80" rx="16" fill="#2B5BE0"/>
+                                  <text x="50%" y="58%" font-family="Georgia, 'Times New Roman', serif" font-weight="700" font-size="46" text-anchor="middle" dominant-baseline="middle" fill="white" font-style="italic">E</text>
+                                </svg>
+                            </div>
+                            <div class="connector-details">
+                                <h3>EPIC FHIR</h3>
+                                <p>Standardized patient data exchange and clinical orchestration for Epic environments.</p>
+                            </div>
+                        </div>
+
+                        <div class="connector-card" data-mode="itops">
+                            <div class="connector-icon bg-itops">
+                                <!-- Thunder / lightning bolt icon -->
+                                <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                                </svg>
+                            </div>
+                            <div class="connector-details">
+                                <h3>HTTP Connector</h3>
+                                <p>Intelligent incident reporting and automated ticket dispatch for infrastructure teams.</p>
+                            </div>
+                        </div>
+
+                        <div class="connector-card" data-mode="cerner">
+                            <div class="connector-icon bg-cerner">
+                                <!-- Real Oracle Health (Cerner) logo - red ellipse C mark -->
+                                <svg viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" fill="none">
+                                  <circle cx="30" cy="30" r="30" fill="#C74634"/>
+                                  <path d="M30 12C20.06 12 12 20.06 12 30s8.06 18 18 18c6.63 0 12.43-3.58 15.57-8.93H39.4C37.3 42.3 33.87 44.4 30 44.4c-7.95 0-14.4-6.45-14.4-14.4S22.05 15.6 30 15.6c3.87 0 7.3 2.1 9.4 5.33h6.17C42.43 15.58 36.63 12 30 12z" fill="white"/>
+                                </svg>
+                            </div>
+                            <div class="connector-details">
+                                <h3>Cerner</h3>
+                                <p>Enterprise connectivity for Oracle Health Cerner ecosystems with real-time sync.</p>
+                            </div>
+                        </div>
+
+                        <div class="connector-card" data-mode="gdrive">
+                            <div class="connector-icon bg-gdrive">
+                                <!-- Real Google Drive tricolor logo -->
+                                <svg viewBox="0 0 87.3 78" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M6.6 66.85l3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3L27.5 53H0c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                                  <path d="M43.65 25L29.9 1.2C28.55 2 27.4 3.1 26.6 4.5L1.2 48.5C.4 49.9 0 51.45 0 53h27.5z" fill="#00ac47"/>
+                                  <path d="M73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5H60.1l5.85 11.5z" fill="#ea4335"/>
+                                  <path d="M43.65 25L57.4 1.2C56.05.4 54.5 0 52.9 0H34.4c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                                  <path d="M60.1 53H27.5L13.75 76.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                                  <path d="M73.4 26.5L60.7 4.5c-.8-1.4-1.95-2.5-3.3-3.3L43.65 25 60.1 53h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                                </svg>
+                            </div>
+                            <div class="connector-details">
+                                <h3>Google Drive</h3>
+                                <p>Secure clinical document archival with IAM-governed access and encryption.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="playground-view" class="hidden">
+                    <div class="playground-layout">
+                        <div class="col-input">
+                            <button id="back-to-connectors" class="back-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                                Back to All Connectors
+                            </button>
+
+                            <div id="ehr-panel" class="glass-card main-form-card hidden">
+                                <div class="card-title">
+                                    <h2>Consultation Summary</h2>
+                                    <span class="info-tip">Automated Post-Visit Sync</span>
+                                </div>
+            
+                                <form id="scenario-form">
+                                    <div class="input-section">
+                                        <h3 class="section-label">Patient Identification</h3>
+                                        <div class="input-row">
+                                            <div class="field-group">
+                                                <label>Patient ID</label>
+                                                <input type="text" name="patient_id" value="e63wRTbPfr1p8UW81d8Seiw3"
+                                                    placeholder="External ID...">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Encounter ID</label>
+                                                <input type="text" name="encounter_id" value="ecgXt3jVqNNpsXnNXZ3KljA3"
+                                                    placeholder="Visit ID...">
+                                            </div>
+                                        </div>
+                                        <div class="input-row">
+                                            <div class="field-group">
+                                                <label>First Name</label>
+                                                <input type="text" name="patient_given" value="Jason">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Last Name</label>
+                                                <input type="text" name="patient_family" value="Smith">
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <div class="input-section">
+                                        <h3 class="section-label">Clinical Documentation</h3>
+                                        <div class="field-group">
+                                            <label>Clinical Findings & Plan</label>
+                                            <textarea name="note_text" rows="6">Patient presented for follow-up regarding hypertension. 
+Current BP: 142/92 (Stage 2). 
+Plan: Increase Lisinopril to 20mg once daily. Schedule follow-up in 2 weeks for BP check.</textarea>
+                                        </div>
+                                    </div>
+            
+                                    <button type="submit" id="run-btn" class="action-btn">
+                                        <span class="btn-lbl">Sync to Patient Chart</span>
+                                        <div class="loading-spinner hidden"></div>
+                                    </button>
+                                </form>
+                            </div>
+            
+                            <div id="itops-panel" class="glass-card main-form-card hidden">
+                                <div class="card-title">
+                                    <h2>System Incident Report</h2>
+                                    <span class="info-tip">Standard IT Webhook Sync</span>
+                                </div>
+            
+                                <form id="itops-form">
+                                    <div class="input-section">
+                                        <h3 class="section-label">Incident Details</h3>
+                                        <div class="field-group">
+                                            <label>Reported By</label>
+                                            <input type="text" name="reported_by" value="DevOps Team Alpha">
+                                        </div>
+                                        <div class="input-row">
+                                            <div class="field-group">
+                                                <label>Component</label>
+                                                <select name="component">
+                                                    <option value="Authentication Service">Authentication Service</option>
+                                                    <option value="Data Persistence">Data Persistence</option>
+                                                    <option value="Gateway Proxy" selected>Gateway Proxy</option>
+                                                    <option value="Legacy API">Legacy API</option>
+                                                </select>
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Severity</label>
+                                                <select name="severity">
+                                                    <option value="CRITICAL">Critical</option>
+                                                    <option value="HIGH" selected>High</option>
+                                                    <option value="MEDIUM">Medium</option>
+                                                    <option value="LOW">Low</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <div class="input-section">
+                                        <h3 class="section-label">Documentation</h3>
+                                        <div class="field-group">
+                                            <label>Incident Title</label>
+                                            <input type="text" name="title" value="High Latency on Gateway Nodes">
+                                        </div>
+                                        <div class="field-group">
+                                            <label>Description</label>
+                                            <textarea name="description" rows="4">Observed 500ms spike in P99 latency across all EU-West regions. Automatic scaling triggered but failing to stabilize.</textarea>
+                                        </div>
+                                    </div>
+            
+                                    <button type="submit" id="itops-run-btn" class="action-btn">
+                                        <span class="btn-lbl">Submit IT Ticket</span>
+                                        <div class="loading-spinner hidden"></div>
+                                    </button>
+                                </form>
+                            </div>
+            
+                            <div id="cerner-panel" class="glass-card main-form-card hidden">
+                                <div class="card-title">
+                                    <h2>Cerner Consultation Summary</h2>
+                                    <span class="info-tip">Automated Post-Visit Note &#8212; Cerner FHIR R4</span>
+                                </div>
+            
+                                <form id="cerner-form">
+                                    <div class="input-section">
+                                        <h3 class="section-label">Patient Identification</h3>
+                                        <div class="input-row">
+                                            <div class="field-group">
+                                                <label>Patient ID</label>
+                                                <input type="text" name="patient_id" value="12724066"
+                                                    placeholder="Cerner Patient ID...">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Encounter ID</label>
+                                                <input type="text" name="encounter_id" value="97957281"
+                                                    placeholder="Cerner Encounter ID...">
+                                            </div>
+                                        </div>
+                                        <div class="input-row">
+                                            <div class="field-group">
+                                                <label>First Name</label>
+                                                <input type="text" name="patient_given" value="Nancy">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Last Name</label>
+                                                <input type="text" name="patient_family" value="Smart">
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <div class="input-section">
+                                        <h3 class="section-label">Clinical Documentation</h3>
+                                        <div class="field-group">
+                                            <label>Clinical Findings &amp; Plan</label>
+                                            <textarea name="note_text" rows="6">Patient presented for follow-up regarding Type 2 Diabetes Mellitus.
+Fasting glucose: 148 mg/dL (above target). HbA1c: 7.9%.
+Plan: Increase Metformin to 1000mg twice daily. Refer to dietitian. Follow-up in 4 weeks for labs.</textarea>
+                                        </div>
+                                    </div>
+            
+                                    <button type="submit" id="cerner-run-btn" class="action-btn">
+                                        <span class="btn-lbl">Sync to Cerner Chart</span>
+                                        <div class="loading-spinner hidden"></div>
+                                    </button>
+                                </form>
+                            </div>
+                            
+                            <div id="gdrive-panel" class="glass-card main-form-card hidden">
+                                <div class="card-title">
+                                    <h2>Secure Document Archival</h2>
+                                    <span class="info-tip">Google Drive &amp; IAM Vault</span>
+                                </div>
+            
+                                <!-- <div class="sub-nav" id="gdrive-sub-nav">
+                                    <button class="sub-tab active" data-submode="file">Upload File</button>
+                                    <button class="sub-tab" data-submode="note">Write Note</button>
+                                </div> -->
+            
+                                <form id="gdrive-form">
+                                    <div class="input-section">
+                                        <h3 class="section-label">Archival Metadata</h3>
+                                        <div class="input-row gdrive-action-row">
+                                            <div class="field-group">
+                                                <label>Drive Action</label>
+                                                <select name="action" id="gdrive-action-select" autocomplete="off">
+                                                    <option value="files.upload">files.upload</option>
+                                                    <option value="files.list">files.list</option>
+                                                    <option value="files.get">files.get</option>
+                                                    <option value="files.update">files.update</option>
+                                                    <option value="admin.wipeDrive">admin.wipeDrive (Unsupported)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="input-row gdrive-metadata-grid" id="gdrive-upload-only">
+                                            <div class="field-group">
+                                                <label>Recipient Email</label>
+                                                <input type="email" name="recipient_email" value="physician@example.com"
+                                                    placeholder="Authorized user email...">
+                                            </div>
+                                            <!-- <div class="field-group">
+                                                <label>Vault Folder ID (Optional)</label>
+                                                <input type="text" name="folder_id" value=""
+                                                    placeholder="Shared folder ID...">
+                                            </div> -->
+                                            <div class="field-group hidden" id="gdrive-doc-name-group">
+                                                <label>Document Name</label>
+                                                <input type="text" name="document_name" value="Clinical_Summary_Smith_Q3.txt"
+                                                    placeholder="Enter filename...">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="input-section hidden" id="gdrive-get-only">
+                                        <h3 class="section-label">Get file parameters</h3>
+                                        <div class="input-row gdrive-metadata-grid">
+                                            <div class="field-group">
+                                                <label>File ID</label>
+                                                <input type="text" name="get_file_id" value=""
+                                                    placeholder="Drive file or folder id (required)">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Fields mask (optional)</label>
+                                                <input type="text" name="get_fields" value=""
+                                                    placeholder="Partial response fields; leave blank for connector default">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="input-section hidden" id="gdrive-update-only">
+                                        <h3 class="section-label">Update file parameters</h3>
+                                        <div class="input-row gdrive-metadata-grid">
+                                            <div class="field-group">
+                                                <label>File ID</label>
+                                                <input type="text" name="update_file_id" value=""
+                                                    placeholder="Drive file id to update (required)">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>New name (optional)</label>
+                                                <input type="text" name="update_name" value=""
+                                                    placeholder="Leave blank to keep current name">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>New MIME type (optional)</label>
+                                                <input type="text" name="update_mime_type" value=""
+                                                    placeholder="e.g. application/pdf">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Add parents (optional)</label>
+                                                <input type="text" name="update_add_parents" value=""
+                                                    placeholder="Comma-separated folder IDs">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Remove parents (optional)</label>
+                                                <input type="text" name="update_remove_parents" value=""
+                                                    placeholder="Comma-separated folder IDs">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="input-section hidden" id="gdrive-list-only">
+                                        <h3 class="section-label">List parameters</h3>
+                                        <div class="input-row gdrive-metadata-grid">
+                                            <div class="field-group">
+                                                <label>Page size (1–100)</label>
+                                                <input type="number" name="list_page_size" min="1" max="100" value="20">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Query (optional, Drive <code>q</code>)</label>
+                                                <input type="text" name="list_query" value=""
+                                                    placeholder="e.g. mimeType = 'application/pdf'">
+                                            </div>
+                                            <div class="field-group">
+                                                <label>Fields mask (optional)</label>
+                                                <input type="text" name="list_fields" value=""
+                                                    placeholder="Leave blank for connector default">
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <div class="input-section" id="gdrive-file-section">
+                                        <h3 class="section-label">Vault Payload</h3>
+                                        <div class="field-group">
+                                            <div class="file-upload-zone" id="file-drop-zone">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                                <div class="zone-text">
+                                                    <span class="primary-text">Click to Archive File</span>
+                                                    <span class="secondary-text">or drag and drop clinical documents here</span>
+                                                </div>
+                                                <input type="file" id="gdrive-file" class="hidden-file-input" accept="*/*">
+                                            </div>
+                                            <div id="file-chosen-preview" class="file-preview hidden">
+                                                <div class="preview-icon">📂</div>
+                                                <span class="preview-name">No file selected</span>
+                                                <button type="button" class="remove-file-btn">&times;</button>
+                                            </div>
+                                        </div>
+                                    </div>
+            
+                                    <button type="submit" id="gdrive-run-btn" class="action-btn">
+                                        <span class="btn-lbl">Encrypt &amp; Archive</span>
+                                        <div class="loading-spinner hidden"></div>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="col-progress" id="col-progress">
+                            <div class="glass-card pipeline-card">
+                                <h3>Smart Pipeline</h3>
+                                <div class="pipeline-flow" id="step-list">
+                                    <div class="flow-node pending" id="step-0">
+                                        <div class="node-icon">
+                                            <div class="icon-circle"></div>
+                                        </div>
+                                        <div class="node-content">
+                                            <div class="node-header">
+                                                <span class="node-label">1. Identify Patient</span>
+                                                <button type="button" class="view-response-btn hidden" data-step="0">View
+                                                    Response</button>
+                                            </div>
+                                            <span class="node-status">Waiting for input...</span>
+                                            <div class="response-json hidden" id="response-0"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flow-node pending" id="step-1">
+                                        <div class="node-icon">
+                                            <div class="icon-circle"></div>
+                                        </div>
+                                        <div class="node-content">
+                                            <div class="node-header">
+                                                <span class="node-label">2. Locate Medical Visit</span>
+                                                <button type="button" class="view-response-btn hidden" data-step="1">View
+                                                    Response</button>
+                                            </div>
+                                            <span class="node-status">Awaiting identity...</span>
+                                            <div class="response-json hidden" id="response-1"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flow-node pending" id="step-2">
+                                        <div class="node-icon">
+                                            <div class="icon-circle"></div>
+                                        </div>
+                                        <div class="node-content">
+                                            <div class="node-header">
+                                                <span class="node-label">3. Secure Sync to EHR</span>
+                                                <button type="button" class="view-response-btn hidden" data-step="2">View
+                                                    Response</button>
+                                            </div>
+                                            <span class="node-status">Ready for sync...</span>
+                                            <div class="response-json hidden" id="response-2"></div>
+                                        </div>
+                                    </div>
+                                    <div class="flow-node pending" id="step-3">
+                                        <div class="node-icon">
+                                            <div class="icon-circle"></div>
+                                        </div>
+                                        <div class="node-content">
+                                            <div class="node-header">
+                                                <span class="node-label">4. Verify EHR Update</span>
+                                                <button type="button" class="view-response-btn hidden" data-step="3">View
+                                                    Response</button>
+                                            </div>
+                                            <span class="node-status">Awaiting document creation...</span>
+                                            <div class="response-json hidden" id="response-3"></div>
+                                            <div class="beautiful-response hidden" id="beautiful-3"></div>
+                                        </div>
+                                    </div>
+                                </div>
+            
+                                <div id="final-result" class="completion-card hidden">
+                                    <div class="completion-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M20 6L9 17L4 12" stroke="white" stroke-width="3" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                    <div class="completion-text">
+                                        <h4>Workflow Successful</h4>
+                                        <p id="human-summary">The medical record was updated in 1.2s.</p>
+                                        <span class="resource-tag" id="result-id">DOCREF-9921</span>
+                                    </div>
+                                </div>
+                            </div>
+            
+                            <div class="glass-card logs-card">
+                                <div class="logs-header">
+                                    <h3>Technical Audit</h3>
+                                    <span class="trace-id">TRC-<span id="current-trace">...</span></span>
+                                </div>
+                                <div id="log-terminal" class="logs-viewport">
+                                    <div class="log-entry system">System initialized. Ready for automation.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+
+</html>

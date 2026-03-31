@@ -1,0 +1,116 @@
+from __future__ import annotations
+
+from typing import Annotated, Any, Dict, Literal, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
+
+
+class BaseDriveOperation(BaseModel):
+    """Base config to strictly forbid unexpected payload fields."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+# --- Specific Operation Schemas ---
+
+
+class FilesCreateOperation(BaseDriveOperation):
+    action: Literal["files.create"]
+    name: str = Field(..., description="The name of the file.")
+    mime_type: Optional[str] = Field(None, description="The MIME type of the file.")
+    parents: Optional[list[str]] = Field(None, description="List of parent folder IDs.")
+
+
+class FilesListOperation(BaseDriveOperation):
+    action: Literal["files.list"]
+    page_size: int = Field(10, ge=1, le=100)
+    query: Optional[str] = Field(None, description="Search query string.")
+    fields: Optional[str] = Field(
+        None,
+        description=(
+            "Optional fields mask for the list response. If omitted, the connector "
+            "uses a performant default: nextPageToken, files(id, name, mimeType, webViewLink)."
+        ),
+    )
+
+
+class PermissionsCreateOperation(BaseDriveOperation):
+    action: Literal["permissions.create"]
+    file_id: str
+    role: Literal["reader", "commenter", "writer", "owner"]
+    email_address: Optional[str] = None
+    type: Literal["user", "group", "domain", "anyone"]
+    domain: Optional[str] = Field(None, description="G Suite domain when type is domain.")
+
+    @model_validator(mode="after")
+    def require_fields_for_perm_type(self) -> "PermissionsCreateOperation":
+        if self.type in ("user", "group"):
+            if not (self.email_address or "").strip():
+                raise ValueError("email_address is required for user and group permission types")
+        elif self.type == "domain":
+            if not (self.domain or "").strip():
+                raise ValueError("domain is required for domain permission type")
+        return self
+
+
+class FilesGetOperation(BaseDriveOperation):
+    action: Literal["files.get"]
+    file_id: str
+    fields: Optional[str] = Field(
+        None,
+        description=(
+            "Optional fields mask; if omitted, a safe default is used by the connector."
+        ),
+    )
+
+
+class FilesUpdateOperation(BaseDriveOperation):
+    action: Literal["files.update"]
+    file_id: str
+    name: Optional[str] = Field(None, description="New file name.")
+    mime_type: Optional[str] = Field(None, description="New MIME type.")
+    add_parents: Optional[list[str]] = Field(
+        None, description="Parent IDs to add (see Drive API addParents)."
+    )
+    remove_parents: Optional[list[str]] = Field(
+        None, description="Parent IDs to remove (see Drive API removeParents)."
+    )
+
+
+class FilesUploadOperation(BaseDriveOperation):
+    action: Literal["files.upload"]
+    name: str = Field(..., description="The name of the file.")
+    mime_type: str = Field(..., description="The MIME type of the file content.")
+    parents: Optional[list[str]] = Field(None, description="List of parent folder IDs.")
+    content: Optional[str] = Field(None, description="UTF-8 text content to upload.")
+    content_base64: Optional[str] = Field(None, description="Base64 encoded binary content to upload.")
+
+
+class FilesDeleteOperation(BaseDriveOperation):
+    action: Literal["files.delete"]
+    file_id: str
+
+
+# --- The Envelope ---
+# The runtime validates against this single type. Pydantic automatically
+# routes the validation to the correct sub-model based on the "action" field.
+# RootModel accepts **raw_input in __init__ so BaseConnector's _input_model_cls(**raw_input) works.
+_OperationUnion = Annotated[
+    Union[
+        FilesCreateOperation,
+        FilesListOperation,
+        PermissionsCreateOperation,
+        FilesGetOperation,
+        FilesUpdateOperation,
+        FilesUploadOperation,
+        FilesDeleteOperation,
+    ],
+    Field(discriminator="action"),
+]
+
+GoogleDriveOperationInput = RootModel[_OperationUnion]
+
+
+class GoogleDriveOperationOutput(BaseModel):
+    raw: Dict[str, Any]
+    description: str

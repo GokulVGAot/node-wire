@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import logging
+import os
+from typing import Optional
+
+from opentelemetry._logs import set_logger_provider
+from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import Resource
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import ParentBased, TraceIdRatioBased
+
+logger = logging.getLogger("runtime.observability")
+
+_INITIALIZED: bool = False
+
+
+class _OtelContextFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
+        span = trace.get_current_span()
+        ctx = span.get_span_context() if span is not None else None
+        if ctx is not None and ctx.is_valid:
+            record.otel_trace_id = format(ctx.trace_id, "032x")
+            record.otel_span_id = format(ctx.span_id, "016x")
+        else:
+            record.otel_trace_id = ""
+            record.otel_span_id = ""
+        return True
+
+
+def init_observability(app_name: str = "node_wire") -> None:
+    """
+    Initialize OpenTelemetry + OpenLLMetry/Traceloop for the process.
+
+    This is intended to be called once at process startup (e.g. from the
+    bindings_entrypoint main()) and is safe to call multiple times.
+    """
+    global _INITIALIZED
+    if _INITIALIZED:
+        return
+
+    # Sampling ratio can be tuned per environment. Default to full sampling in dev-like setups.
+    sampling_ratio_str: str = os.getenv("AOT_TRACING_SAMPLING_RATIO", "1.0")
+    try:
+        sampling_ratio = float(sampling_ratio_str)
+    except ValueError:
+        logger.warning(
+            "Invalid AOT_TRACING_SAMPLING_RATIO %r, falling back to 1.0", sampling_ratio_str
+        )
+        sampling_ratio = 1.0
+
+    resource = Resource.create(
+        {
+            "service.name": app_name,
+        }
+    )
+
+    tracer_provider = TracerProvider(
+        sampler=ParentBased(TraceIdRatioBased(sampling_ratio)),
+        resource=resource,
+    )
+
+    otlp_headers: Optional[str] = os.getenv("OTEL_EXPORTER_OTLP_HEADERS")
+
+    span_exporter = OTLPSpanExporter(
+        headers=dict(
+            header.split("=", 1) for header in otlp_headers.split(",")
+        ) if otlp_headers else None,
+    )
+
+    span_processor = BatchSpanProcessor(span_exporter)
+    tracer_provider.add_span_processor(span_processor)
+    trace.set_tracer_provider(tracer_provider)
+
+    # Logs: export Python logging records via OTLP/HTTP to the local collector.
+    # This enables Loki ingestion when using grafana/otel-lgtm.
+    log_exporter = OTLPLogExporter(
+        headers=dict(
+            header.split("=", 1) for header in otlp_headers.split(",")
+        ) if otlp_headers else None,
+    )
+    logger_provider = LoggerProvider(resource=resource)
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+    set_logger_provider(logger_provider)
+
+    root_logger = logging.getLogger()
+    root_logger.addFilter(_OtelContextFilter())
+    root_logger.addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+    # Initialize Traceloop/OpenLLMetry in metadata-only mode. Advanced AI features
+    # (prompt logging, workflows, tools) are intentionally deferred.
+    try:
+        from traceloop.sdk import Traceloop
+
+        Traceloop.init(
+            app_name=app_name,            
+        )
+    except Exception as exc:  # pragma: no cover - defensive; should not fail app startup
+        logger.warning("Failed to initialize Traceloop/OpenLLMetry: %s", exc)
+
+    _INITIALIZED = True
+    logger.info("Observability initialized for app %s", app_name)
+

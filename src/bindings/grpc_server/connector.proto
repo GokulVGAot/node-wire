@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package aot.connectors;
+
+service ConnectorService {
+  rpc Invoke (InvokeRequest) returns (InvokeResponse);
+}
+
+message InvokeRequest {
+  string connector_id = 1;
+  string action = 2;
+  string payload_json = 3;
+}
+
+message InvokeResponse {
+  bool success = 1;
+  string data_json = 2;
+  string error_code = 3;
+  string error_category = 4;
+  string message = 5;
+  string trace_id = 6;
+}
+

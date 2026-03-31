@@ -1,0 +1,432 @@
+"""
+ToolHive Agent
+==============
+A ReAct-style AI agent that connects to an MCP server running in ToolHive,
+discovers its tools, and orchestrates a healthcare workflow:
+
+  1. Fetch patient details via fhir_cerner_read_patient or fhir_epic_read_patient
+  2. Write a patient summary file via google_drive_upload_file
+  3. Email the summary via smtp_send_email
+
+The LLM backend is fully configurable via the LLM_PROVIDER env var.
+
+Usage::
+
+    python -m agents.toolhive \\
+        --patient-id 12724066 \\
+        --recipient-email user@example.com \\
+        --drive-folder-id "1ABC..."   # optional
+
+    # Swap to OpenAI:
+    LLM_PROVIDER=openai python -m agents.toolhive --patient-id 12724066 ...
+
+Environment variables:
+    TOOLHIVE_MCP_URL : MCP proxy URL from ToolHive UI (e.g. http://localhost:PORT/sse)
+    LLM_PROVIDER     : groq | openai | gemini | anthropic  (default: groq)
+    GROQ_API_KEY     : (when using groq)
+    OPENAI_API_KEY   : (when using openai)
+    GEMINI_API_KEY   : (when using gemini)
+    ANTHROPIC_API_KEY: (when using anthropic)
+"""
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import logging
+import os
+import sys
+import uuid
+from contextlib import AsyncExitStack
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from dotenv import load_dotenv
+
+load_dotenv()
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+)
+logger = logging.getLogger("agents.toolhive")
+
+
+# ---------------------------------------------------------------------------
+# Result model
+# ---------------------------------------------------------------------------
+
+@dataclass
+class AgentStep:
+    step: int
+    tool_called: Optional[str]
+    tool_args: Dict[str, Any]
+    tool_result: Optional[str]
+    llm_thought: Optional[str]
+
+
+@dataclass
+class AgentRunResult:
+    success: bool
+    trace_id: str
+    steps: List[AgentStep] = field(default_factory=list)
+    final_answer: Optional[str] = None
+    error: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
+# Lightweight async MCP client (SSE / streamable-HTTP transport)
+# ---------------------------------------------------------------------------
+
+class ToolHiveMcpClient:
+    """
+    Minimal async MCP client that communicates with the ToolHive HTTP proxy.
+
+    ToolHive wraps the stdio MCP server in an HTTP proxy. We send JSON-RPC
+    requests to that proxy endpoint.  The client sends POST requests to
+    ``{base_url}/messages`` and receives responses as Server-Sent Events or
+    plain JSON.
+    """
+
+    def __init__(self, base_url: str) -> None:
+        self._base_url = base_url.rstrip("/")
+
+    async def _rpc(self, method: str, params: Dict[str, Any]) -> Any:
+        import httpx
+        payload = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": method,
+            "params": params,
+        }
+
+        # Post JSON-RPC to the configured base URL. Some deployments expect
+        # the base to already include the path (e.g. "/mcp"). Avoid probing
+        # other paths to prevent legitimate 404 responses from cluttering
+        # logs or causing fallbacks.
+        url = self._base_url
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                url,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            if "error" in data:
+                raise RuntimeError(f"MCP error: {data['error']}")
+            return data.get("result")
+
+    async def list_tools(self) -> List[Dict[str, Any]]:
+        result = await self._rpc("tools/list", {})
+        return result.get("tools", [])
+
+    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+        result = await self._rpc("tools/call", {"name": name, "arguments": arguments})
+        # MCP returns content as list of {type, text} blocks
+        content = result.get("content", [])
+        if isinstance(content, list):
+            parts = [c.get("text", "") for c in content if c.get("type") == "text"]
+            return "\n".join(parts)
+        return str(content)
+
+
+class StdioMcpClient:
+    """
+    MCP client that launches the server as a subprocess and talks via stdio.
+    Useful for local manual testing without ToolHive.
+    """
+
+    def __init__(self, command: List[str]) -> None:
+        self._command = command
+        self._exit_stack = AsyncExitStack()
+        self._session = None
+
+    async def __aenter__(self) -> StdioMcpClient:
+        try:
+            from mcp import ClientSession, StdioServerParameters
+            from mcp.client.stdio import stdio_client
+        except ImportError as exc:
+            raise ImportError("mcp SDK not installed.") from exc
+
+        params = StdioServerParameters(
+            command=self._command[0],
+            args=self._command[1:],
+            env=os.environ.copy(),
+        )
+        stdio_transport = await self._exit_stack.enter_async_context(stdio_client(params))
+        self._read, self._write = stdio_transport
+        self._session = await self._exit_stack.enter_async_context(
+            ClientSession(self._read, self._write)
+        )
+        await self._session.initialize()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self._exit_stack.aclose()
+
+    async def list_tools(self) -> List[Dict[str, Any]]:
+        if not self._session:
+            raise RuntimeError("Client not initialised. Use 'async with'")
+        resp = await self._session.list_tools()
+        # Convert to simple tool list
+        return [{"name": t.name, "description": t.description, "input_schema": t.inputSchema} for t in resp.tools]
+
+    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> str:
+        if not self._session:
+            raise RuntimeError("Client not initialised. Use 'async with'")
+        resp = await self._session.call_tool(name, arguments)
+        parts = [c.text for c in resp.content if hasattr(c, "text")]
+        return "\n".join(parts)
+
+
+# ---------------------------------------------------------------------------
+# The Agent
+# ---------------------------------------------------------------------------
+
+class ToolHiveAgent:
+    """
+    ReAct-style agent that uses an LLM + MCP tools from ToolHive.
+
+    The agent:
+    1. Calls ``list_tools`` to build the tool manifest for the LLM.
+    2. Enters a ReAct loop: send task + tools to LLM → if tool call →
+       invoke tool → append result → repeat.
+    3. Stops when the LLM returns a final answer (no tool calls) or
+       ``max_steps`` is reached.
+    """
+
+    def __init__(
+        self,
+        mcp_client: ToolHiveMcpClient,
+        llm_provider: Any,  # BaseLLMProvider
+        max_steps: int = 10,
+    ) -> None:
+        self._mcp = mcp_client
+        self._llm = llm_provider
+        self._max_steps = max_steps
+        self._system_prompt: str = (
+            "You are a healthcare data assistant. You have access to tools for fetching "
+            "patient data from Cerner FHIR and Epic FHIR, uploading files to Google Drive, and sending "
+            "emails via SMTP.\n\n"
+            "WORKFLOW (MUST EXECUTE SEQUENTIALLY, ONE STRICT STEP AT A TIME):\n"
+            "When asked to 'Send patient summaries via email' or similar tasks, you MUST follow this exact flow in order. DO NOT parallelize these steps:\n"
+            "  1. First turn: Search for the patient. (If you have a Patient ID, you DO NOT need their name or birthdate).\n"
+            "     CRITICAL: If the user has NOT provided a patient ID or name in their message, you MUST ASK them for it. DO NOT call the search tool with a guessed or hallucinated ID like '12345'.\n"
+            "  2. Second turn: Once you have the patient data from step 1, create a file on Google Drive containing the masked patient summary. Do NOT use placeholder content.\n"
+            "  3. Third turn: Once step 2 returns a 'web_view_link', send an email with that exact link. Do NOT call the email tool until you have the link.\n"
+            "     CRITICAL: You MUST ask the user for the recipient email address if they haven't provided it. DO NOT guess email addresses like 'recipient_email@example.com'.\n"
+            "     CRITICAL: In the email body, you MUST insert the actual URL string returned from step 2 (e.g. 'https://drive.google.com/...'). Do NOT literally write the text '<web_view_link>'.\n\n"
+            "DATA PRIVACY & MASKING — follow these strictly:\n"
+            "- Before uploading ANY data to Google Drive or sending it via Email, you MUST apply masking to the ACTUAL patient data you retrieved from tools:\n"
+            "  - Date of Birth (DOB): Replace the year with '****' (e.g., if DOB is 1985-12-31, write ****-12-31).\n"
+            "  - Patient ID: Mask all but the first 3 digits (e.g., if ID is '8877665', write '887****').\n"
+            "  - NEVER use the placeholder values ('1990-05-12', '12724066', or 'Name') in your reports - always use the real patient data masked accordingly.\n"
+            "- EMAIL WORKFLOW: When sending patient details to an email recipient:\n"
+            "  1. ALWAYS upload the masked patient summary to Google Drive first.\n"
+            "  2. Use the 'web_view_link' returned by the google_drive_upload_file tool.\n"
+            "  3. In the email body, provide that link instead of the actual data.\n"
+            "  4. The email body should be professional: 'Patient data summary from the EHR is available at the following secure link: [Link]'\n\n"
+            "GUARDRAILS:\n"
+            "- NEVER hallucinate or make up patient details. DO NOT guess IDs like '12345'. If missing, ask the user.\n"
+            "- NEVER use placeholders like 'to be updated later' or '<web_view_link>'.\n"
+            "- If a tool requires data from a previous tool's output, you MUST WAIT for the previous tool to complete in a previous turn.\n"
+            "- If the user provides a Patient ID, do NOT ask for their name or birthdate. The ID is perfectly sufficient.\n"
+            "- Do not call the same tool twice unless the first call failed.\n"
+            "- Before calling any tool, verify you have ALL required parameters.\n"
+            "- If a tool call fails, explain the error clearly and ask the user how to proceed.\n"
+            "- Always confirm what you've done after completing the requested actions.\n"
+            "- Keep responses concise and professional.\n"
+        )
+
+
+
+    async def run(self, task: str) -> AgentRunResult:
+        trace_id = str(uuid.uuid4())
+        logger.info("Agent run started | trace_id=%s", trace_id)
+        logger.info("Task: %s", task)
+
+        # Import here to avoid circular dependency in tests
+        from agents.llm_factory import LLMMessage
+
+        result = AgentRunResult(success=False, trace_id=trace_id)
+
+        # 1. Discover available tools
+        try:
+            tools = await self._mcp.list_tools()
+            logger.info("Discovered %d MCP tools", len(tools))
+        except Exception as exc:
+            result.error = f"Failed to list MCP tools: {exc}"
+            logger.error(result.error)
+            return result
+
+        # 2. Initialise conversation
+        messages: List[LLMMessage] = [
+            LLMMessage(
+                role="system",
+                content=self._system_prompt,
+            ),
+            LLMMessage(role="user", content=task),
+        ]
+
+        # 3. ReAct loop
+        for step_num in range(1, self._max_steps + 1):
+            logger.info("Agent step %d / %d", step_num, self._max_steps)
+
+            try:
+                llm_resp = self._llm.chat_with_tools(messages, tools)
+            except Exception as exc:
+                result.error = f"LLM error at step {step_num}: {exc}"
+                logger.error(result.error)
+                return result
+
+            # Track the assistant turn
+            messages.append(LLMMessage(
+                role="assistant",
+                content=llm_resp.content,
+                tool_calls=llm_resp.tool_calls,
+            ))
+
+            if not llm_resp.wants_tool_call:
+                # LLM finished
+                result.final_answer = llm_resp.content
+                result.success = True
+                logger.info("Agent finished after %d steps", step_num)
+                break
+
+            # Execute each tool call
+            for tc in llm_resp.tool_calls:
+                logger.info("Calling tool: %s | args=%s", tc.name, tc.arguments)
+                agent_step = AgentStep(
+                    step=step_num,
+                    tool_called=tc.name,
+                    tool_args=tc.arguments,
+                    tool_result=None,
+                    llm_thought=llm_resp.content,
+                )
+
+                try:
+                    tool_result_str = await self._mcp.call_tool(tc.name, tc.arguments)
+                    logger.info("Tool %s returned: %.200s", tc.name, tool_result_str)
+                except Exception as exc:
+                    tool_result_str = f"ERROR: {exc}"
+                    logger.error("Tool %s failed: %s", tc.name, exc)
+
+                agent_step.tool_result = tool_result_str
+                result.steps.append(agent_step)
+
+                messages.append(LLMMessage(
+                    role="tool",
+                    content=tool_result_str,
+                    tool_call_id=tc.id,
+                    name=tc.name,
+                ))
+        else:
+            # Hit max_steps without a final answer
+            result.error = f"Agent reached max_steps ({self._max_steps}) without completing the task."
+            logger.warning(result.error)
+
+        return result
+
+
+# ---------------------------------------------------------------------------
+# CLI entrypoint
+# ---------------------------------------------------------------------------
+
+async def _run_agent(args: argparse.Namespace) -> None:
+    from agents.llm_factory import LLMProviderFactory
+
+    llm_provider_name = os.environ.get("LLM_PROVIDER", "groq")
+    logger.info("Creating LLM provider: %s", llm_provider_name)
+    provider = LLMProviderFactory.create_from_env()
+
+    if args.local:
+        logger.info("Using local stdio transport (launching server as subprocess)")
+        # Launch the mcp_entrypoint.py as a subprocess
+        cmd = [sys.executable, "-m", "agents.mcp_entrypoint"]
+        mcp_client_context = StdioMcpClient(cmd)
+    else:
+        mcp_url = os.environ.get("TOOLHIVE_MCP_URL", "")
+        if not mcp_url:
+            raise ValueError(
+                "TOOLHIVE_MCP_URL is not set. "
+                "Find the proxy URL in ToolHive UI → Installed → node-wire-connectors → copy the endpoint, "
+                "or use --local for testing without a proxy."
+            )
+        mcp_client_context = ToolHiveMcpClient(mcp_url)
+
+    # Use the client (handle async context for stdio)
+    if isinstance(mcp_client_context, StdioMcpClient):
+        async with mcp_client_context as mcp_client:
+            agent = ToolHiveAgent(mcp_client, provider, max_steps=args.max_steps)
+            await _execute_task(agent, args, llm_provider_name, "local-stdio")
+    else:
+        agent = ToolHiveAgent(mcp_client_context, provider, max_steps=args.max_steps)
+        await _execute_task(agent, args, llm_provider_name, mcp_url)
+
+
+async def _execute_task(agent: ToolHiveAgent, args: argparse.Namespace, provider_name: str, mcp_info: str) -> None:
+
+    # Build the task prompt
+    task_parts = [
+        f"Patient ID: {args.patient_id}" if args.patient_id else "",
+        f"Patient name — family: {args.patient_family}, given: {args.patient_given}" if args.patient_family else "",
+        f"Please:",
+        f"1. Fetch the patient's details from Cerner FHIR or Epic FHIR (if the ID starts with 'e').",
+        f"2. Create a text file named 'patient_summary_{args.patient_id or args.patient_family}.txt' in Google Drive"
+        + (f" in folder {args.drive_folder_id}" if args.drive_folder_id else "") + ".",
+        f"3. Send an email to {args.recipient_email} with the subject "
+        f"'Patient Summary' and the patient details in the body.",
+        f"After completing all steps, confirm what was done.",
+    ]
+    task = "\n".join(p for p in task_parts if p)
+
+    print("\n" + "=" * 60)
+    print("Node Wire ToolHive Agent")
+    print(f"Provider : {provider_name}")
+    print(f"MCP info : {mcp_info}")
+    print("=" * 60)
+    print(f"Task:\n{task}\n")
+
+    run_result = await agent.run(task)
+
+    print("\n" + "=" * 60)
+    print("RESULT")
+    print("=" * 60)
+    if run_result.success:
+        print(f"✅ Success  | trace_id={run_result.trace_id}")
+        print(f"\nFinal Answer:\n{run_result.final_answer}")
+    else:
+        print(f"❌ Failed   | trace_id={run_result.trace_id}")
+        print(f"Error: {run_result.error}")
+
+    if run_result.steps:
+        print(f"\nSteps executed ({len(run_result.steps)}):")
+        for s in run_result.steps:
+            status = "✓" if "ERROR" not in (s.tool_result or "") else "✗"
+            print(f"  {status} Step {s.step}: {s.tool_called}")
+            print(f"       args   : {json.dumps(s.tool_args, indent=None)[:120]}")
+            print(f"       result : {(s.tool_result or '')[:120]}")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="ToolHive AI Agent — Cerner/Epic FHIR → Google Drive → Email"
+    )
+    parser.add_argument("--patient-id", default="", help="Cerner or Epic FHIR Patient ID")
+    parser.add_argument("--patient-family", default="", help="Patient family name (for search)")
+    parser.add_argument("--patient-given", default="", help="Patient given name (for search)")
+    parser.add_argument("--recipient-email", required=True, help="Email address to send the summary to")
+    parser.add_argument("--drive-folder-id", default=os.environ.get("GOOGLE_DRIVE_FOLDER_ID", ""), help="Google Drive folder ID (optional)")
+    parser.add_argument("--max-steps", type=int, default=10, help="Maximum agent steps (default: 10)")
+    parser.add_argument("--local", action="store_true", help="Run against local server via stdio (no proxy)")
+    args = parser.parse_args()
+
+    if not args.patient_id and not args.patient_family:
+        parser.error("Provide either --patient-id or --patient-family")
+
+    import sys
+    asyncio.run(_run_agent(args))
+
+
+if __name__ == "__main__":
+    main()
