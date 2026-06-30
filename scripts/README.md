@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 AOT Technologies
+
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # build-mcp-server.sh
 
 Shell script to build a ToolHive-ready MCP server from a scope fixture and OpenAPI spec. It runs validate, generate, dependency sync, and optional quality checks in one pass.
