@@ -13,8 +13,8 @@ from contextvars import ContextVar
 from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 from bindings.factory import ConnectorFactory
-from bindings.mcp_server.auth import (    
-    McpAuthError,   
+from bindings.mcp_server.auth import (
+    McpAuthError,
     authenticate_mcp_request,
     reset_upstream_passthrough_context,
     log_effective_mcp_auth_state,
