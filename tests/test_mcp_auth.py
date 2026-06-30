@@ -47,15 +47,33 @@ def test_mcp_auth_missing_token_returns_401(monkeypatch: pytest.MonkeyPatch) -> 
 
 def test_mcp_upstream_passthrough_missing_bearer(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("NW_MCP_AUTH_ENABLED", raising=False)
+    monkeypatch.delenv("NW_MCP_AUTH_DISABLED", raising=False)
 
     with pytest.raises(McpAuthRequiredError):
         authenticate_mcp_request(upstream_passthrough=True)
+
+
+def test_mcp_upstream_passthrough_sets_bearer_when_auth_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Local dev: NW_MCP_AUTH_DISABLED must still thread Google token to Drive."""
+    monkeypatch.setenv("NW_MCP_AUTH_DISABLED", "true")
+
+    identity = authenticate_mcp_request(
+        headers={"Authorization": "Bearer google-access-token"},
+        upstream_passthrough=True,
+    )
+    assert identity is None
+    assert get_upstream_bearer() == "google-access-token"
+    reset_upstream_passthrough_context()
+    assert get_upstream_bearer() is None
 
 
 def test_mcp_upstream_passthrough_accepts_opaque_google_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("NW_MCP_AUTH_ENABLED", raising=False)
+    monkeypatch.delenv("NW_MCP_AUTH_DISABLED", raising=False)
 
     identity = authenticate_mcp_request(
         headers={"Authorization": "Bearer not-an-nw-api-key"},
@@ -411,6 +429,7 @@ def test_upstream_passthrough_denied_mode_lists_google_drive_tools(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.delenv("NW_MCP_AUTH_ENABLED", raising=False)
+    monkeypatch.delenv("NW_MCP_AUTH_DISABLED", raising=False)
     monkeypatch.setenv("NW_MCP_SCOPE_POLICY_DEFAULT", "deny")
     monkeypatch.setenv("GOOGLE_DRIVE_AUTH_PROVIDER", "upstream_bearer")
 

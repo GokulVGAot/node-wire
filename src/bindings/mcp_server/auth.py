@@ -237,12 +237,14 @@ def authenticate_mcp_request(
     upstream_granted_scopes: tuple[str, ...] = (),
 ) -> CallerIdentity | None:
     if upstream_passthrough:
-        if mcp_auth_disabled():
-            return None
         token = extract_token(headers=headers, meta=meta)
         if not token:
+            if mcp_auth_disabled():
+                return None
             raise McpAuthRequiredError()
         _upstream_reset_ctx.set(set_upstream_bearer(token))
+        if mcp_auth_disabled():
+            return None
         # Ponytail: MCP scopes gate tool visibility on this server; the Google OAuth
         # access token on the request is the upstream authz boundary for Drive API.
         identity = build_caller_identity(
