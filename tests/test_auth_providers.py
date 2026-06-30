@@ -467,13 +467,19 @@ def test_factory_builds_service_account_provider() -> None:
 @pytest.mark.asyncio
 async def test_factory_builds_upstream_bearer_provider() -> None:
     from bindings.factory import ConnectorFactory
-    from node_wire_runtime.auth.base import get_upstream_bearer, reset_upstream_bearer, set_upstream_bearer
+    from node_wire_runtime.auth.base import (
+        get_upstream_bearer,
+        reset_upstream_bearer,
+        set_upstream_bearer,
+    )
 
     sp = _DictSecretProvider({})
     factory = ConnectorFactory.__new__(ConnectorFactory)
     factory._secret_provider = sp
 
-    provider = factory._build_auth_provider("google_drive", {"auth": {"provider": "upstream_bearer"}})
+    provider = factory._build_auth_provider(
+        "google_drive", {"auth": {"provider": "upstream_bearer"}}
+    )
     assert getattr(provider, "per_request_credentials", False) is True
 
     ctx = set_upstream_bearer("google-access-token")
