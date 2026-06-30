@@ -50,7 +50,21 @@ class GoogleDriveConnector(BaseConnector):
     def build_client(self) -> Any:
         import asyncio
 
-        creds = asyncio.run(self._auth_provider.get_client_credentials())
+        async def _fetch_creds() -> Any:
+            return await self._auth_provider.get_client_credentials()
+
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            creds = asyncio.run(_fetch_creds())
+        else:
+            if loop.is_running():
+                import concurrent.futures
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    creds = pool.submit(asyncio.run, _fetch_creds()).result()
+            else:
+                creds = loop.run_until_complete(_fetch_creds())
         if creds is None:
             # Fallback for NoAuthProvider or unconfigured provider —
             # attempt direct secret resolution for backward compatibility.
@@ -133,12 +147,7 @@ class GoogleDriveConnector(BaseConnector):
                 raise GoogleDriveAuthError("Upstream bearer token required")
             drive = build("drive", "v3", credentials=creds)
         else:
-            if self._client is None:
-                creds = await self._auth_provider.get_client_credentials()
-                if creds is None:
-                    raise GoogleDriveAuthError("Authentication credentials unavailable")
-                self._client = build("drive", "v3", credentials=creds)
-            drive = self._client
+            drive = self.get_client()
         extra = {"trace_id": trace_id, **(log_extra or {})}
         logger.info("Google Drive %s", action_name, extra=extra)
         try:

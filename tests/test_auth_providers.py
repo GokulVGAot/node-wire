@@ -513,7 +513,7 @@ def test_google_drive_auth_provider_env_overrides_yaml(
 def test_google_drive_auth_provider_env_invalid_raises(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from bindings.factory import ConnectorFactory, _resolve_google_drive_auth
+    from bindings.factory import _resolve_google_drive_auth
 
     monkeypatch.setenv("GOOGLE_DRIVE_AUTH_PROVIDER", "oauth2")
     with pytest.raises(ValueError, match="GOOGLE_DRIVE_AUTH_PROVIDER"):
