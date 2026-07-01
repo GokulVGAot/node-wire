@@ -8,6 +8,8 @@ SPDX-License-Identifier: Apache-2.0
 
 Shell script to build a ToolHive-ready MCP server from a scope fixture and OpenAPI spec. It runs validate, generate, dependency sync, and optional quality checks in one pass.
 
+> **In the node-wire repo:** `scripts/mcp-servers.registry` and `scripts/build-mcp-server.sh` are kept here for convenience, but scope paths (`e2e/fixtures/real/…`) and generated output (`out/<server>-mcp/`) live in the **[mcp-builder](https://github.com/stacklok/mcp-builder)** clone. Pass `--root /path/to/mcp-builder` (or set `MCP_BUILDER_ROOT`) — do not rely on node-wire as the default root.
+
 ---
 
 ## Prerequisites
@@ -83,6 +85,8 @@ The script needs the mcp-builder repository root (where `pyproject.toml` lives).
 1. `--root PATH`
 2. `MCP_BUILDER_ROOT` environment variable
 3. Parent of the `scripts/` directory
+
+When the script lives under **node-wire** (not mcp-builder), option 3 resolves to the node-wire root, which does **not** contain `e2e/fixtures/`. Always use `--root` or `MCP_BUILDER_ROOT` in that case.
 
 The root must contain `pyproject.toml` and `scripts/mcp-servers.registry`.
 
@@ -241,3 +245,6 @@ Some OpenAPI specs contain non-ASCII content. The script sets `PYTHONUTF8=1` aut
 
 - [mcp-builder README](../README.md)
 - [e2e/download_openapi_specs.sh](../e2e/download_openapi_specs.sh)
+- [mcp-builder on GitHub](https://github.com/stacklok/mcp-builder) — upstream repo for `e2e/fixtures/` and `out/<server>-mcp/deploy/`
+- [Google Drive connector (OIDC / ToolHive manifests)](../docs/google_drive_connector.md#user-oauth-oidc--upstream-bearer)
+- [Node Wire MCP servers](../docs/mcp-servers.md)
