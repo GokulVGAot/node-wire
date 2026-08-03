@@ -599,10 +599,12 @@ MCP tool names: **`<connector_id>.<action>`** (e.g. `fhir_epic.read_patient`). S
 
 ### Standalone MCP server (optional — dedicated Docker/ToolHive image)
 
-> **Prerequisite:** Complete Steps 9–11 (Tier 2) first. The Dockerfile copies pre-built `.whl` files from `packages/connectors/<name>/dist/`; that directory does not exist until you run `bash scripts/build-packages.sh packages/connectors/<name>`.
+> **Prerequisite:** Complete Steps 9–11 (Tier 2) first. Generated hosts install wheels from `packages/*/dist/`; build with `bash scripts/build-packages.sh packages/runtime packages/connectors/<name>` before Path B.
 
-12. Add `src/agents/<name>_mcp.py`, a `[project.scripts]` entry in root `pyproject.toml`, `docker/<name>/Dockerfile`, and entries in **`scripts/build-mcp-images.sh`**, **`docker-compose.mcp.yml`**, and **[local-packages-to-images.md](local-packages-to-images.md)** (wheel → image mapping table).
-13. Add a row to the naming table in **[mcp-servers.md](mcp-servers.md)** and update the architecture diagram in that file to include the new connector.
+12. Generate the host with **`nw-mcp-builder`**: follow [Adding an MCP host for a new connector](mcp-servers.md#adding-an-mcp-host-for-a-new-connector) (local Path A, or ToolHive Path B with Linux wheels).
+13. Add a row to the [naming conventions](mcp-servers.md#naming-conventions) table in **[mcp-servers.md](mcp-servers.md)**.
+
+Optional legacy images (`src/agents/<name>_mcp.py`, `docker/<name>/`, `build-mcp-images.sh`) are documented in [local-packages-to-images.md](local-packages-to-images.md) — not required for `nw-mcp-builder`.
 
 For full file lists see [packaging.md — Adding a new publishable connector](packaging.md#adding-a-new-publishable-connector).
 

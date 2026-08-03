@@ -168,19 +168,17 @@ matrix:
 
 ### Tier 3 — Standalone MCP server (optional)
 
-> **Prerequisite:** Tier 2 (the PyPI wheel) must be completed first. The Dockerfile copies pre-built `.whl` files from `packages/connectors/<name>/dist/`; that directory does not exist until you run `bash scripts/build-packages.sh packages/connectors/<name>`.
+> **Prerequisite:** Tier 2 (the PyPI wheel) must be completed first. Generated Docker hosts install wheels from `packages/*/dist/`; that directory does not exist until you run `bash scripts/build-packages.sh packages/connectors/<name>` (and runtime).
 
-Use when you need a dedicated Docker/ToolHive image for a single connector (not required for the combined `agents.mcp_entrypoint` server). For the entrypoint code template and Dockerfile template see [mcp-servers.md — Adding a row for a new connector](mcp-servers.md#adding-a-row-for-a-new-connector).
+**Preferred:** generate a thin host with [`nw-mcp-builder`](mcp-servers.md) — see [Adding an MCP host for a new connector](mcp-servers.md#adding-an-mcp-host-for-a-new-connector) and the [naming conventions](mcp-servers.md#naming-conventions) table. For ToolHive Docker, follow [Path B](mcp-servers.md#path-b--toolhive-local-docker) (Linux wheels + `--skip-build-wheels`).
 
-| File | Purpose |
+| Path | Purpose |
 |---|---|
-| `src/agents/<name>_mcp.py` | Per-connector MCP agent entrypoint |
-| Root `pyproject.toml` | `[project.scripts]` e.g. `nw-<kebab-name>` |
-| `docker/<name>/Dockerfile` | Demo MCP image |
-| [`scripts/build-mcp-images.sh`](https://github.com/AOT-Technologies/node-wire/blob/main/scripts/build-mcp-images.sh) | `docker build` block |
-| [`docker-compose.mcp.yml`](https://github.com/AOT-Technologies/node-wire/blob/main/docker-compose.mcp.yml) | Service + `NW_ALLOWED_CONNECTORS` |
-| [mcp-servers.md](mcp-servers.md) | Naming conventions table row |
-| [local-packages-to-images.md](local-packages-to-images.md) | Wheel → image mapping |
+| `nw-mcp-builder` CLI | Build wheels, fixture, and `out/<name>-mcp/` |
+| [mcp-servers.md](mcp-servers.md) | Paths A/B, naming table, env, ToolHive |
+| [local-packages-to-images.md](local-packages-to-images.md) | Legacy wheel → `docker/` image mapping |
+
+**Legacy (optional):** hand-maintained `src/agents/<name>_mcp.py`, `docker/<name>/Dockerfile`, [`scripts/build-mcp-images.sh`](https://github.com/AOT-Technologies/node-wire/blob/main/scripts/build-mcp-images.sh), and [`docker-compose.mcp.yml`](https://github.com/AOT-Technologies/node-wire/blob/main/docker-compose.mcp.yml) — not required when using `nw-mcp-builder`.
 
 ---
 

@@ -100,7 +100,7 @@ python -m agents.mcp_entrypoint
 
 ### 2. Individual MCP Servers
 Each connector runs as its own independent MCP server (often in a dedicated Docker container). This is preferred for modular, scalable deployments.
-- **Full Guide:** [Individual MCP Servers (Docker)](mcp-servers.md)
+- **Full Guide:** [Per-connector MCP servers (`nw-mcp-builder`)](mcp-servers.md)
 
 ---
 
@@ -123,5 +123,5 @@ Each connector defines a manifest that MCP uses to understand available tools.
 - The runtime handles argument normalization, so LLM-friendly aliases often work automatically.
 
 ## Related Docs
-- [Individual MCP Servers (Docker)](mcp-servers.md)
+- [Per-connector MCP servers (`nw-mcp-builder`)](mcp-servers.md)
 - [ToolHive Agent Scenario](toolhive_agent_scenario.md)
