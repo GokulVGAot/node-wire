@@ -1169,6 +1169,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        postgres
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stripe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2767,6 +2778,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#postgres" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        postgres
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#stripe" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3046,6 +3068,12 @@ Per-tenant secrets follow the <a href="../architecture/tenancy/#tenant-secrets">
 <td>—</td>
 </tr>
 <tr>
+<td><a href="#postgres"><code>postgres</code></a></td>
+<td>55 actions: server and session, schema discovery, read, write, DDL</td>
+<td><code>none</code> (credentials via secrets)</td>
+<td>—</td>
+</tr>
+<tr>
 <td><a href="#stripe"><code>stripe</code></a></td>
 <td><code>charge</code>, <code>create_payment_intent</code>, <code>create_subscription</code>, <code>cancel_subscription</code>, <code>issue_refund</code></td>
 <td><code>static_token</code></td>
@@ -3059,7 +3087,7 @@ Per-tenant secrets follow the <a href="../architecture/tenancy/#tenant-secrets">
 </tr>
 <tr>
 <td><a href="#google_drive"><code>google_drive</code></a></td>
-<td><code>files.list</code>, <code>files.get</code>, <code>files.create</code>, <code>files.upload</code>, <code>files.update</code>, <code>files.delete</code>, <code>permissions.create</code></td>
+<td>49 Drive v3 actions (48 generated, plus <code>drive_files_upload</code>) (<code>drive_files_list</code>, <code>drive_files_get</code>, <code>drive_files_create</code>, <code>drive_files_update</code>, <code>drive_files_delete</code>, <code>drive_permissions_create</code>, comments, revisions, shared drives and more); upload up to 5 MB, no download</td>
 <td><code>service_account</code> (or <code>upstream_bearer</code>)</td>
 <td><a href="../google_drive_connector/">Google Drive</a></td>
 </tr>
@@ -3099,6 +3127,20 @@ Per-tenant secrets follow the <a href="../architecture/tenancy/#tenant-secrets">
   settings are server-side only, so credentials never go to a caller-chosen host. Set
   <code>NW_SMTP_ALLOWED_HOSTS</code> in production. <code>subject</code> may not contain newlines or control characters.</li>
 </ul>
+<h3 id="postgres"><code>postgres</code><a class="headerlink" href="#postgres" title="Anchor link to this section">&para;</a></h3>
+<ul>
+<li><strong>Package:</strong> <code>node-wire-postgres</code>, <code>src/node_wire_postgres/</code>. Driver: psycopg 3 with <code>psycopg_pool</code>.</li>
+<li><strong>Versions:</strong> PostgreSQL 11 or later (tested on 16; <code>reindex</code> with <code>concurrently</code> needs 12; 17 and 18 expected to work but not tested; older than 11 unsupported). psycopg <code>&gt;=3.2,&lt;4</code>, Python 3.11+.</li>
+<li><strong>Secrets / settings:</strong> secrets <code>POSTGRES_USERNAME</code>, <code>POSTGRES_PASSWORD</code>. Settings <code>host</code>, <code>port</code>, <code>database</code>,
+  <code>sslmode</code> in <code>connectors.yaml</code> or <code>POSTGRES_HOST</code>, <code>POSTGRES_PORT</code>, <code>POSTGRES_DATABASE</code>, <code>POSTGRES_SSLMODE</code>.
+  They are server-side only: the payload never names the server.</li>
+<li><strong>Modes:</strong> <code>mode</code> (<code>NW_POSTGRES_MODE</code>) is <code>read_only</code>, <code>read_write</code> or <code>admin</code> (default <code>read_only</code>). Each action
+  needs a minimum mode. Read actions always run in <code>SET TRANSACTION READ ONLY</code>, so the database enforces it.</li>
+<li><strong>Limits:</strong> <code>statement_timeout_ms</code> (30000), <code>max_rows</code> (1000), <code>pool_max</code> (5), <code>allowed_schemas</code>, <code>allowed_tables</code>
+  (<code>schema.table</code>). Raw SQL takes one statement with bound parameters. The allowlists cover the structured actions;
+  give the database role only the privileges it needs, because that role is the real boundary.</li>
+<li><strong>Actions:</strong> see <code>src/node_wire_postgres/README.md</code>. Expose a subset with the action-expose function.</li>
+</ul>
 <h3 id="stripe"><code>stripe</code><a class="headerlink" href="#stripe" title="Anchor link to this section">&para;</a></h3>
 <ul>
 <li><strong>Package:</strong> <code>node-wire-stripe</code>, <code>src/node_wire_stripe/</code>. MCP image <code>nw-stripe</code>.</li>
@@ -3123,7 +3165,8 @@ Per-tenant secrets follow the <a href="../architecture/tenancy/#tenant-secrets">
 <li><strong>Secrets / settings:</strong> <code>GOOGLE_DRIVE_SA_JSON</code> (JSON contents, or an absolute path locally), <code>GOOGLE_DRIVE_FOLDER_ID</code>.</li>
 <li><strong>Per-user access:</strong> <code>upstream_bearer</code> relays each caller's own Google token
   (<a href="../google_drive_connector/#upstream_bearer">Google Drive — upstream bearer</a>).</li>
-<li><strong>Guide:</strong> <a href="../google_drive_connector/">Google Drive</a> covers service-account setup and the error codes.</li>
+<li><strong>Not supported:</strong> file-content upload, download and update. The connector calls only the <code>/drive/v3</code> address, so <code>drive_files_create</code> and <code>drive_files_update</code> work on metadata, and <code>drive_files_get</code> cannot return content.</li>
+<li><strong>Guide:</strong> <a href="../google_drive_connector/">Google Drive</a> covers service-account setup, the action list and the error codes.</li>
 </ul>
 <h3 id="slack"><code>slack</code><a class="headerlink" href="#slack" title="Anchor link to this section">&para;</a></h3>
 <ul>
