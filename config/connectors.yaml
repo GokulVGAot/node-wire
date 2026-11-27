@@ -162,3 +162,13 @@ connectors:
     database: nwdb
     sslmode: disable
     mode: read_only           # read_only | read_write | admin (insert needs read_write)
+  middesk:
+    enabled: true
+    exposed_via:
+    - rest
+    - grpc
+    - mcp
+    base_url: https://api-sandbox.middesk.com/v1
+    auth:
+      provider: static_token
+      secret_key: MIDDESK_TOKEN

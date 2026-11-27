@@ -1,0 +1,587 @@
+{
+  "summary": {
+    "id": "middesk",
+    "spec_source": "https://docs.middesk.com/openapi.json",
+    "spec_version": "3.1.0",
+    "generator_version": "1.1.2",
+    "spec_content_hash": "f1ac880906eda006bdd6b75701142966deda6fec8be8885593c2a6ca07823462",
+    "error": null,
+    "total_operations": 90,
+    "generated": 90,
+    "soft_dropped": 0,
+    "deprecated": 0,
+    "coverage_warning": false,
+    "default_base_url": "https://api-sandbox.middesk.com/v1"
+  },
+  "generated_actions": [
+    {
+      "name": "businesses_list_businesses",
+      "method": "GET",
+      "path": "/v1/businesses",
+      "auth": true
+    },
+    {
+      "name": "businesses_create_business",
+      "method": "POST",
+      "path": "/v1/businesses",
+      "auth": true
+    },
+    {
+      "name": "businesses_get_business",
+      "method": "GET",
+      "path": "/v1/businesses/{id}",
+      "auth": true
+    },
+    {
+      "name": "businesses_update_business",
+      "method": "PATCH",
+      "path": "/v1/businesses/{id}",
+      "auth": true
+    },
+    {
+      "name": "businesses_get_business_pdf",
+      "method": "GET",
+      "path": "/v1/businesses/{id}/pdf",
+      "auth": true
+    },
+    {
+      "name": "orders_list_orders",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/orders",
+      "auth": true
+    },
+    {
+      "name": "orders_create_order",
+      "method": "POST",
+      "path": "/v1/businesses/{business_id}/orders",
+      "auth": true
+    },
+    {
+      "name": "orders_get_order",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/orders/{id}",
+      "auth": true
+    },
+    {
+      "name": "orders_get_order_by_id",
+      "method": "GET",
+      "path": "/v1/orders/{id}",
+      "auth": true
+    },
+    {
+      "name": "orders_update_order",
+      "method": "PUT",
+      "path": "/v1/orders/{id}",
+      "auth": true
+    },
+    {
+      "name": "business_batches_list_business_batches",
+      "method": "GET",
+      "path": "/v1/business_batches",
+      "auth": true
+    },
+    {
+      "name": "business_batches_create_business_batch",
+      "method": "POST",
+      "path": "/v1/business_batches",
+      "auth": true
+    },
+    {
+      "name": "business_batches_get_business_batch",
+      "method": "GET",
+      "path": "/v1/business_batches/{id}",
+      "auth": true
+    },
+    {
+      "name": "business_batches_get_business_batch_csv",
+      "method": "GET",
+      "path": "/v1/business_batches/{id}/csv",
+      "auth": true
+    },
+    {
+      "name": "signals_list_signals",
+      "method": "GET",
+      "path": "/v1/signals",
+      "auth": true
+    },
+    {
+      "name": "signals_create_signal",
+      "method": "POST",
+      "path": "/v1/signals",
+      "auth": true
+    },
+    {
+      "name": "signals_get_signal",
+      "method": "GET",
+      "path": "/v1/signals/{id}",
+      "auth": true
+    },
+    {
+      "name": "monitoring_get_business_monitor",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/monitor",
+      "auth": true
+    },
+    {
+      "name": "monitoring_create_business_monitor",
+      "method": "POST",
+      "path": "/v1/businesses/{business_id}/monitor",
+      "auth": true
+    },
+    {
+      "name": "monitoring_update_business_monitor",
+      "method": "PUT",
+      "path": "/v1/businesses/{business_id}/monitor",
+      "auth": true
+    },
+    {
+      "name": "monitoring_delete_business_monitor",
+      "method": "DELETE",
+      "path": "/v1/businesses/{business_id}/monitor",
+      "auth": true
+    },
+    {
+      "name": "monitoring_bulk_disable_monitors",
+      "method": "POST",
+      "path": "/v1/monitoring/bulk_disable",
+      "auth": true
+    },
+    {
+      "name": "liens_list_liens",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/liens",
+      "auth": true
+    },
+    {
+      "name": "liens_create_lien",
+      "method": "POST",
+      "path": "/v1/businesses/{business_id}/liens",
+      "auth": true
+    },
+    {
+      "name": "registrations_create_registration",
+      "method": "POST",
+      "path": "/v1/businesses/{business_id}/registrations",
+      "auth": true
+    },
+    {
+      "name": "policy_results_list_business_policy_results",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/policy_results",
+      "auth": true
+    },
+    {
+      "name": "reviews_get_business_review",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/review",
+      "auth": true
+    },
+    {
+      "name": "actions_list_actions",
+      "method": "GET",
+      "path": "/v1/actions",
+      "auth": true
+    },
+    {
+      "name": "actions_create_action",
+      "method": "POST",
+      "path": "/v1/actions",
+      "auth": true
+    },
+    {
+      "name": "actions_get_action",
+      "method": "GET",
+      "path": "/v1/actions/{id}",
+      "auth": true
+    },
+    {
+      "name": "tin_match_get_tin_match_availability",
+      "method": "GET",
+      "path": "/v1/tin_match/availability",
+      "auth": true
+    },
+    {
+      "name": "websites_get_business_website",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/website",
+      "auth": true
+    },
+    {
+      "name": "connections_list_connections",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/connections",
+      "auth": true
+    },
+    {
+      "name": "timeline_get_business_timeline",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/timeline",
+      "auth": true
+    },
+    {
+      "name": "liens_create_lien_filings_in_batch",
+      "method": "POST",
+      "path": "/v1/businesses/{business_id}/liens/batch",
+      "auth": true
+    },
+    {
+      "name": "lien_terminations_create_lien_termination",
+      "method": "POST",
+      "path": "/v1/liens/{lien_id}/termination",
+      "auth": true
+    },
+    {
+      "name": "lien_continuations_create_lien_continuation",
+      "method": "POST",
+      "path": "/v1/liens/{lien_id}/continuations",
+      "auth": true
+    },
+    {
+      "name": "registration_requests_list_registration_requests",
+      "method": "GET",
+      "path": "/v1/partner/registration_requests",
+      "auth": true
+    },
+    {
+      "name": "registration_requests_create_registration_request",
+      "method": "POST",
+      "path": "/v1/partner/registration_requests",
+      "auth": true
+    },
+    {
+      "name": "registration_requests_get_registration_request",
+      "method": "GET",
+      "path": "/v1/partner/registration_requests/{id}",
+      "auth": true
+    },
+    {
+      "name": "registration_requests_delete_registration_request",
+      "method": "DELETE",
+      "path": "/v1/partner/registration_requests/{id}",
+      "auth": true
+    },
+    {
+      "name": "registration_requests_get_registration_request_guest",
+      "method": "GET",
+      "path": "/v1/partner/registration_requests/{id}/guest_dashboard",
+      "auth": true
+    },
+    {
+      "name": "information_requests_list_information_requests",
+      "method": "GET",
+      "path": "/v1/partner/exceptions",
+      "auth": true
+    },
+    {
+      "name": "applications_create_application",
+      "method": "POST",
+      "path": "/v1/partner/applications",
+      "auth": true
+    },
+    {
+      "name": "companies_create_company",
+      "method": "POST",
+      "path": "/v1/partner/companies",
+      "auth": true
+    },
+    {
+      "name": "jurisdictions_search_jurisdictions",
+      "method": "GET",
+      "path": "/v1/agent/jurisdictions/search",
+      "auth": true
+    },
+    {
+      "name": "jurisdictions_list_jurisdictions",
+      "method": "GET",
+      "path": "/v1/agent/jurisdictions",
+      "auth": true
+    },
+    {
+      "name": "questions_list_questions",
+      "method": "GET",
+      "path": "/v1/agent/questions",
+      "auth": true
+    },
+    {
+      "name": "mail_list_mail_items",
+      "method": "GET",
+      "path": "/v1/partner/mail",
+      "auth": true
+    },
+    {
+      "name": "mail_get_mail_item",
+      "method": "GET",
+      "path": "/v1/partner/mail/{id}",
+      "auth": true
+    },
+    {
+      "name": "mail_update_mail_item",
+      "method": "PATCH",
+      "path": "/v1/partner/mail/{id}",
+      "auth": true
+    },
+    {
+      "name": "agents_list_agents",
+      "method": "GET",
+      "path": "/v1/agents",
+      "auth": true
+    },
+    {
+      "name": "agents_get_agent",
+      "method": "GET",
+      "path": "/v1/agents/{id}",
+      "auth": true
+    },
+    {
+      "name": "threads_list_agent_threads",
+      "method": "GET",
+      "path": "/v1/threads",
+      "auth": true
+    },
+    {
+      "name": "threads_create_agent_thread",
+      "method": "POST",
+      "path": "/v1/threads",
+      "auth": true
+    },
+    {
+      "name": "threads_get_agent_thread",
+      "method": "GET",
+      "path": "/v1/threads/{id}",
+      "auth": true
+    },
+    {
+      "name": "runs_list_agent_runs",
+      "method": "GET",
+      "path": "/v1/runs",
+      "auth": true
+    },
+    {
+      "name": "runs_create_agent_run",
+      "method": "POST",
+      "path": "/v1/runs",
+      "auth": true
+    },
+    {
+      "name": "runs_get_agent_run",
+      "method": "GET",
+      "path": "/v1/runs/{id}",
+      "auth": true
+    },
+    {
+      "name": "runs_submit_agent_run_feedback",
+      "method": "POST",
+      "path": "/v1/runs/{id}/feedback",
+      "auth": true
+    },
+    {
+      "name": "runs_stream_agent_run_events",
+      "method": "GET",
+      "path": "/v1/runs/{id}/stream",
+      "auth": true
+    },
+    {
+      "name": "identities_autocomplete_business_identities",
+      "method": "POST",
+      "path": "/v1/identities/autocomplete",
+      "auth": true
+    },
+    {
+      "name": "prefill_business",
+      "method": "POST",
+      "path": "/v1/prefill/businesses",
+      "auth": true
+    },
+    {
+      "name": "webhooks_list_webhooks",
+      "method": "GET",
+      "path": "/v1/webhooks",
+      "auth": true
+    },
+    {
+      "name": "webhooks_create_webhook",
+      "method": "POST",
+      "path": "/v1/webhooks",
+      "auth": true
+    },
+    {
+      "name": "webhooks_get_webhook",
+      "method": "GET",
+      "path": "/v1/webhooks/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_update_webhook",
+      "method": "PUT",
+      "path": "/v1/webhooks/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_delete_webhook",
+      "method": "DELETE",
+      "path": "/v1/webhooks/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_list_webhook_event_schemas",
+      "method": "GET",
+      "path": "/v1/webhooks/{webhook_id}/event_schemas",
+      "auth": true
+    },
+    {
+      "name": "webhooks_create_webhook_event_schema",
+      "method": "POST",
+      "path": "/v1/webhooks/{webhook_id}/event_schemas",
+      "auth": true
+    },
+    {
+      "name": "webhooks_get_webhook_event_schema",
+      "method": "GET",
+      "path": "/v1/webhooks/{webhook_id}/event_schemas/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_delete_webhook_event_schema",
+      "method": "DELETE",
+      "path": "/v1/webhooks/{webhook_id}/event_schemas/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_update_webhook_event_schema",
+      "method": "PATCH",
+      "path": "/v1/webhooks/{webhook_id}/event_schemas/{id}",
+      "auth": true
+    },
+    {
+      "name": "webhooks_get_oidc_keys",
+      "method": "GET",
+      "path": "/v1/webhooks/oidc_keys",
+      "auth": true
+    },
+    {
+      "name": "documents_list_documents",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/documents",
+      "auth": true
+    },
+    {
+      "name": "documents_create_document",
+      "method": "POST",
+      "path": "/v1/documents",
+      "auth": true
+    },
+    {
+      "name": "documents_get_document",
+      "method": "GET",
+      "path": "/v1/documents/{id}",
+      "auth": true
+    },
+    {
+      "name": "documents_get_document_download_url",
+      "method": "GET",
+      "path": "/v1/documents/{id}/download_url",
+      "auth": true
+    },
+    {
+      "name": "packages_list_packages",
+      "method": "GET",
+      "path": "/v1/packages",
+      "auth": true
+    },
+    {
+      "name": "packages_get_package",
+      "method": "GET",
+      "path": "/v1/packages/{id}",
+      "auth": true
+    },
+    {
+      "name": "risk_assessments_get_risk_assessments",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/risk_assessments",
+      "auth": true
+    },
+    {
+      "name": "risk_assessments_get_latest_risk_assessment",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/risk_assessments/latest",
+      "auth": true
+    },
+    {
+      "name": "risk_assessments_get_risk_assessment",
+      "method": "GET",
+      "path": "/v1/businesses/{business_id}/risk_assessments/{id}",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_list_sub_accounts",
+      "method": "GET",
+      "path": "/v1/sub_accounts",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_create_sub_account",
+      "method": "POST",
+      "path": "/v1/sub_accounts",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_get_sub_account",
+      "method": "GET",
+      "path": "/v1/sub_accounts/{id}",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_update_sub_account",
+      "method": "PATCH",
+      "path": "/v1/sub_accounts/{id}",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_list_sub_account_api_keys",
+      "method": "GET",
+      "path": "/v1/sub_accounts/{sub_account_id}/api_keys",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_create_sub_account_api_key",
+      "method": "POST",
+      "path": "/v1/sub_accounts/{sub_account_id}/api_keys",
+      "auth": true
+    },
+    {
+      "name": "sub_accounts_delete_sub_account_api_key",
+      "method": "DELETE",
+      "path": "/v1/sub_accounts/{sub_account_id}/api_keys/{id}",
+      "auth": true
+    }
+  ],
+  "skipped": [],
+  "auth": {
+    "scheme_name": "bearer_auth",
+    "provider": "static_token",
+    "tier": "self_managed",
+    "secret_key": "MIDDESK_TOKEN",
+    "secret_keys": [
+      "MIDDESK_TOKEN"
+    ],
+    "yaml": {
+      "provider": "static_token",
+      "secret_key": "MIDDESK_TOKEN"
+    },
+    "notes": []
+  },
+  "notes": [
+    "Dropped spec parameter(s) that duplicate the connector credential: secret (in body). The configured AuthProvider supplies the credential; exposing it as a call argument would ask the caller for a secret"
+  ],
+  "gate": {
+    "ok": true,
+    "import_ok": true,
+    "pytest_ok": true,
+    "message": "clean build",
+    "pytest_output": "........................................................................ [ 80%]\n..................                                                       [100%]\n90 passed in 1.72s\n"
+  },
+  "wire": {
+    "ok": true,
+    "wired": true
+  }
+}

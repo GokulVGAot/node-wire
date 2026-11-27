@@ -1,0 +1,26 @@
+# Edit select/exclude, then run: nw expose resolve. The runtime reads only `actions`.
+connector: middesk
+profile: middesk-lending
+select:
+- name:*business*
+exclude:
+- name:*delete*
+actions:
+- business_batches_create_business_batch
+- business_batches_get_business_batch
+- business_batches_get_business_batch_csv
+- business_batches_list_business_batches
+- businesses_create_business
+- businesses_get_business
+- businesses_get_business_pdf
+- businesses_list_businesses
+- businesses_update_business
+- identities_autocomplete_business_identities
+- monitoring_create_business_monitor
+- monitoring_get_business_monitor
+- monitoring_update_business_monitor
+- policy_results_list_business_policy_results
+- prefill_business
+- reviews_get_business_review
+- timeline_get_business_timeline
+- websites_get_business_website
